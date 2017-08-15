@@ -1,0 +1,50 @@
+@isTest
+private class CreateProjectRecordTest{
+  static testmethod void TestSaveProject(){
+
+    Contact contact = new Contact(LastName = 'TestContact');
+    insert contact;
+    Account account = new Account(Name = 'TestAccount', Primary_Contact__c = contact.Id);
+    insert account;
+
+    Opportunity opp = new Opportunity(Name = 'TestOpportunity',
+                                      StageName = 'Open',
+                                      CloseDate = System.today()+7,
+                                      Description = 'unit test',
+                                      Probability = 81,
+                                      AccountId = account.Id);
+    insert opp;
+
+    Project__c testProjectRecord = [SELECT Name, OwnerId, Description__c, Opportunity__c, Primary_Contact__c FROM Project__c WHERE Opportunity__c = :opp.Id LIMIT 1];
+    System.assertEquals('TestOpportunity', testProjectRecord.Name);
+    System.assert(testProjectRecord.OwnerId == opp.OwnerId);
+    System.assert(testProjectRecord.Description__c == 'unit test');
+    System.assert(testProjectRecord.Opportunity__c == opp.Id);
+    System.assert(testProjectRecord.Primary_Contact__c == account.Primary_Contact__c);
+
+  }
+
+  static testmethod void TestExistsOpportunity(){
+
+    Contact contact = new Contact(LastName = 'TestContact');
+    insert contact;
+    Account account = new Account(Name = 'TestAccount', Primary_Contact__c = contact.Id);
+    insert account;
+    
+    Opportunity opp = new Opportunity(Name = 'TestOpportunity',
+                                      StageName = 'Open',
+                                      CloseDate = Date.today()+7,
+                                      Description = 'unit test',
+                                      Probability = 81,
+                                      AccountId = account.Id);
+    insert opp;
+    System.debug(opp);
+    opp.Probability = 85;
+    update opp;
+    System.debug(opp);
+    
+    List<Project__c> testProjectRecords = [SELECT Id FROM Project__c WHERE Opportunity__c = :opp.Id];
+    System.assert(testProjectRecords.size() == 1);
+  }
+
+}

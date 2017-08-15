@@ -1,0 +1,33 @@
+trigger CreateProjectRecord on Opportunity (after insert, after update) {
+
+  List<Project__c> projectsToInsert = new List<Project__c>();
+  for (Opportunity opp : Trigger.new){
+    if (opp.Probability > 80){
+
+      // Check 'Opportunity' already have 'Project' in related list.
+      List<Project__c> projectIds = [SELECT Id FROM Project__c WHERE Opportunity__c = :opp.Id];
+      if (projectIds.isEmpty()){
+        // Get Primary_Contact__c from Account
+        Opportunity opportunityRecord = [SELECT Account.Id, Account.Primary_Contact__c FROM Opportunity WHERE id = :opp.Id];
+        
+        Project__c projectRecord = new Project__c();
+        projectRecord.Name = opp.Name;
+        projectRecord.OwnerId = opp.OwnerId; // No such column 'OwnerId' on entity 'Project__c'
+        projectRecord.Description__c = opp.Description;
+        projectRecord.Opportunity__c = opp.Id;
+        projectRecord.Primary_Contact__c = opportunityRecord.Account.Primary_Contact__c;
+        projectsToInsert.add(projectRecord);
+      }
+    }
+  }
+
+  // If list is empty then nothing insert.
+  if (projectsToInsert.size() > 0){
+    try{
+      insert projectsToInsert;
+    } catch (DmlException e){
+      System.debug('DmlException');
+    }
+  }
+
+}
