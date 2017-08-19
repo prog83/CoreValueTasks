@@ -1,0 +1,197 @@
+public class myControllerTask {
+    
+    // Consultants that have tasks
+    List<SelectOption> Consultants = new List<SelectOption>();  
+    // Selected consultant
+    public String FilterId {get;set;}
+    // Tasks for the week
+    List<TaskWeek> tasksweek = new List<TaskWeek>();
+    
+    // Load page
+    public myControllerTask() {
+        setConsultants();
+ 	    StartWeek = new Time__c(Date__c = Date.Today());
+    }
+    
+    // Get start week
+    public Time__c StartWeek {
+        get {
+        	StartWeek.Date__c = StartWeek.Date__c.toStartOfWeek();
+            return StartWeek;    
+        }
+        set;
+    }
+    
+    // Set consultants that have tasks
+    private void setConsultants() {          
+        for(Contact oneRelationship : [SELECT Id, Name 
+                                       FROM Contact 
+                                       WHERE Id IN (SELECT Consultant__c FROM Task__c)
+                                       ORDER BY Name]){
+          	if (FilterId == null) {
+            	FilterId = oneRelationship.Id;                         
+            }                                            
+            Consultants.add(new SelectOption(String.valueOf(oneRelationship.Id),
+                                             oneRelationship.Name));                 
+        }        
+    }
+    
+    //Get consultants that have tasks
+    public List<SelectOption> getConsultants() {          
+    	return Consultants;
+    }
+    
+    // ApexPages.StandardSetController must be instantiated
+    // for standard list controllers
+    public ApexPages.StandardSetController setCon {
+        get {
+            setCon = new ApexPages.StandardSetController(Database.getQueryLocator(
+                [SELECT Id, Name, Project__c, Project__r.Name
+                 FROM Task__c
+                 WHERE Consultant__c = :FilterId
+                   AND Id IN (SELECT Task__c FROM Time__c
+                              WHERE Task__r.Consultant__r.Id = :FilterId
+                                AND Date__c >= :StartWeek.Date__c AND Date__c < :StartWeek.Date__c + 7)]
+            ));          
+            return setCon;
+        }
+        set;
+    }
+	
+    // Initialize setCon and return a list of records
+    public List<Time__c> getTimes() {
+         return (List<Time__c>) setCon.getRecords();
+    } 
+    
+    // Save time for task (Converting custom object to sObjects)
+    private void saveTime(Date dt, Integer timespend, TaskWeek record) {
+        Billing_Rule__c billing = [SELECT Id, Non_billable__c FROM Billing_Rule__c
+                                   WHERE Id = :record.BillingRuleId];
+        billing.Non_billable__c = record.NonBillable;
+        try {
+        	update billing;
+        } catch(System.DMLException e) {
+            ApexPages.addMessages(e);
+        }
+        
+        List<Time__c> times = [SELECT Id, Time_spend__c FROM Time__c
+                               WHERE Task__c = :record.TaskId AND Date__c = :dt LIMIT 1];
+        	if (times.isEmpty() && timespend != 0) {
+            	Time__c newTime = new Time__c();
+                newTime.Name = record.ProjectTask;
+                newTime.Billing_Rule__c = record.BillingRuleId;
+                newTime.Project__c = record.ProjectId;
+                newTime.Task__c = record.TaskId;
+                newTime.Date__c = dt;
+                newTime.Time_spend__c = timespend;
+                try {
+                    insert newTime;
+        	    } catch(System.DMLException e) {
+            		ApexPages.addMessages(e);
+                }                
+            } else {
+                if (timespend == 0) {
+                    try {
+                        delete times;
+                    } catch(System.DMLException e) {
+                        ApexPages.addMessages(e);
+                    }                    
+                } else {
+                    times[0].Time_spend__c = timespend;                    
+                    try {
+                        update times;
+                    } catch(System.DMLException e) {
+                        ApexPages.addMessages(e);
+                    }
+                }
+            }
+    }
+        
+    // Save
+    public PageReference save() {
+        for (TaskWeek record : tasksweek) {
+            // Mon
+ 			saveTime(StartWeek.Date__c, record.Mon, record);
+            // Tue
+            saveTime(StartWeek.Date__c+1, record.Tue, record);
+            // Wed
+            saveTime(StartWeek.Date__c+2, record.Wed, record);
+            // Thu
+            saveTime(StartWeek.Date__c+3, record.Thu, record);
+            // Fri
+            saveTime(StartWeek.Date__c+4, record.Fri, record);
+            // Sut
+            saveTime(StartWeek.Date__c+5, record.Sut, record);
+            // Sun
+            saveTime(StartWeek.Date__c+6, record.Sun, record);        
+        }        
+        return null;
+    }
+   
+    // Add row
+    public PageReference add() {
+        Task__c task = new Task__c();
+        task.Name = 'add row';
+        task.Consultant__c = FilterId;
+        try {
+            insert task;
+        } catch(System.DMLException e) {
+            ApexPages.addMessages(e);
+        }
+        return null;
+    }
+    
+    // Delete
+    public PageReference del() {
+ 	    return null;
+    }
+    
+    // Get tasks for the week
+    public List<TaskWeek> getTasksWeek() {
+    	tasksweek.clear();        
+        // Converting to custom object
+        for (Task__c task : (List<Task__c>) setCon.getRecords()) {
+        	TaskWeek record = new TaskWeek();
+            record.ProjectId = task.Project__c;
+            record.TaskId = task.Id;
+            record.ProjectTask = task.Project__r.Name +' - ' + task.Name;
+            record.StartWeek = StartWeek.Date__c;            
+            List<Time__c> times = [SELECT Id, Billing_Rule__c,
+                     				Billing_Rule__r.Non_billable__c,
+                     				Date__c, Time_spend__c
+                     			  FROM Time__c
+                                  WHERE Project__c = :task.Project__c
+                                    AND Task__c = :task.Id
+                                    AND Task__r.Consultant__r.Id = :FilterId
+                                    AND Date__c >= :StartWeek.Date__c AND Date__c < :StartWeek.Date__c + 7];
+            for (Time__c rowTime : times) {
+                record.BillingRuleId = rowTime.Billing_Rule__c;
+            	record.NonBillable = rowTime.Billing_Rule__r.Non_billable__c;
+                Integer numDay = rowTime.Date__c.toStartOfWeek().daysBetween(rowTime.Date__c); 
+                if (numDay == 0) {
+                    record.Mon = rowTime.Time_spend__c.intValue();               
+                } else if (numDay == 1) {
+                    record.Tue = rowTime.Time_spend__c.intValue();
+                }
+                 else if (numDay == 2) {
+                    record.Wed = rowTime.Time_spend__c.intValue();
+                }
+                 else if (numDay == 3) {
+                    record.Thu = rowTime.Time_spend__c.intValue();
+                }
+                 else if (numDay == 4) {
+                    record.Fri = rowTime.Time_spend__c.intValue();
+                }
+                 else if (numDay == 5) {
+                    record.Sut = rowTime.Time_spend__c.intValue();
+                }
+                 else if (numDay == 6) {
+                    record.Sun = rowTime.Time_spend__c.intValue();
+                }   
+            }
+         	tasksweek.add(record);
+    	}
+        return tasksweek;
+    }
+    
+}

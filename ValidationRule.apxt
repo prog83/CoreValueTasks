@@ -1,0 +1,10 @@
+trigger ValidationRule on Billing_Rule__c (before insert, before update) {
+	
+	for(Billing_Rule__c billing : trigger.new) {
+        // The rates must be 0.
+		if (billing.Non_billable__c && (billing.Client_rate__c != 0 || billing.Consultant_rate__c != 0)) {
+            billing.addError('The rates must be 0!');
+        }
+    }
+    
+}

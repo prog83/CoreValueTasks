@@ -1,0 +1,20 @@
+public class TaskWeek {
+	// Custom object/type
+    
+	public String BillingRuleId {get;set;}
+    public String ProjectId {get;set;}    
+    public String TaskId {get;set;}
+    public Date StartWeek {get;set;}
+    public String ProjectTask {get;set;}
+    public Boolean NonBillable {get;set;}
+    public Integer Mon {get;set;}
+    public Integer Tue {get;set;}
+    public Integer Wed {get;set;}
+    public Integer Thu {get;set;}
+    public Integer Fri {get;set;}
+    public Integer Sut {get;set;}
+    public Integer Sun {get;set;}    
+    
+    public TaskWeek() {}
+   
+}

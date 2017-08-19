@@ -1,0 +1,59 @@
+<apex:page controller="myControllerTask">
+	<apex:form >
+        <apex:pageBlock >
+            <apex:pageMessages />
+            <apex:pageBlockSection columns="2">
+	        	<apex:pageBlockSectionItem >
+            	<apex:outputLabel value="Consultant:"/>
+            	<apex:selectList value="{!FilterId}" size="1">
+                	<apex:actionSupport event="onchange" rerender="TaskWeek_table"/>
+                	<apex:selectOptions value="{!Consultants}"/>
+            	</apex:selectList>
+            	</apex:pageBlockSectionItem>
+            	<apex:pageBlockSectionItem >
+                	<apex:inputField showDatePicker="true" value="{!StartWeek.Date__c}">
+                    	<apex:actionSupport event="onchange" rerender="TaskWeek_table"/>
+                    </apex:inputField>
+            	</apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+        
+        <apex:pageBlock >
+            <apex:pageBlockTable value="{!TasksWeek}" var="t" id="TaskWeek_table">
+      			<apex:column headerValue="Project - Task" value="{!t.ProjectTask}" />
+      			<apex:column headerValue="Non Billable" width="1%">
+        			<apex:inputCheckbox value="{!t.NonBillable}"/>
+      			</apex:column>
+                <apex:column headerValue="Mon" width="1%">
+        			<apex:inputText value="{!t.Mon}" size="2" maxlength="2"/>
+      			</apex:column>
+                <apex:column headerValue="Tue" width="1%">
+        			<apex:inputText value="{!t.Tue}" size="2" maxlength="2"/>
+      			</apex:column>
+                <apex:column headerValue="Wed" width="1%">
+        			<apex:inputText value="{!t.Wed}" size="2" maxlength="2"/>
+      			</apex:column>
+                <apex:column headerValue="Thu" width="1%">
+        			<apex:inputText value="{!t.Thu}" size="2" maxlength="2"/>
+      			</apex:column>
+                <apex:column headerValue="Fri" width="1%">
+        			<apex:inputText value="{!t.Fri}" size="2" maxlength="2"/>
+      			</apex:column>
+                <apex:column headerValue="Sut" width="1%">
+        			<apex:inputText value="{!t.Sut}" size="2" maxlength="2"/>
+      			</apex:column>
+                <apex:column headerValue="Sun" width="1%">
+        			<apex:inputText value="{!t.Sun}" size="2" maxlength="2"/>
+      			</apex:column>
+                <apex:column width="1%">
+        			<apex:commandLink action="{!del}" value="X"/>
+      			</apex:column> 
+    		</apex:pageBlockTable>
+            
+    		<apex:pageBlockButtons location="bottom">
+                <apex:commandButton value="Add row" action="{!add}"/>
+        		<apex:commandButton value="Save" action="{!save}"/>
+    		</apex:pageBlockButtons>
+  		</apex:pageBlock>
+    </apex:form>
+</apex:page>
