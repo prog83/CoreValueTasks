@@ -1,0 +1,71 @@
+@isTest
+public class Task2Test {
+
+	static testmethod void TestValidationRule(){
+    	Billing_Rule__c billing = new Billing_Rule__c(Name = 'TestValidationRule', 
+                                              Client_rate__c = 10,
+                                              Non_billable__c = True);
+      
+        Test.startTest();
+    	Database.SaveResult result = Database.insert(billing, false);
+    	Test.stopTest();
+
+    	System.assert(!result.isSuccess());
+    }
+    
+    public static testMethod void testMyController() {
+        
+        Contact contact = new Contact(LastName = 'TestContact');
+        insert contact;
+        
+        Opportunity opp = new Opportunity(Name = 'TestOpportunity', 
+                                          StageName = 'Open',
+                                          CloseDate = System.today()+7,
+                                          Description = 'unit test');
+        insert opp;
+        
+        Project__c project = new Project__c(Name = 'TestProject', Opportunity__c = opp.Id);
+        insert project;
+        
+        Billing_Rule__c billing = new Billing_Rule__c(Name = 'TestBillingRule', Project__c = project.Id);
+        insert billing;
+        
+        Task__c task = new Task__c(Name = 'TestTask', Project__c = project.Id, Consultant__c = contact.Id);
+        insert task;
+        
+        Date startWeek = Date.today().toStartOfWeek();
+        List<Time__c> newtimes = new List<Time__c>();
+        for (Integer i = 1; i <= 6; i++) {
+   			Time__c newtime = new Time__c(Name = 'TestTime', 
+                                       	  Billing_Rule__c = billing.Id,
+									      Project__c = project.Id,
+                                          Task__c = task.Id,
+                                          Date__c = startWeek + i,
+                                          Time_spend__c = i);
+			newtimes.add(newtime);
+        }
+        insert newtimes;
+        
+        myControllerTask controller = new myControllerTask();
+        System.assertEquals(Date.Today().toStartOfWeek(), controller.StartWeek.Date__c);
+        
+        List<SelectOption> consultants = controller.getConsultants();
+        
+        // Insert
+        List<TaskWeek> tasksweek = controller.getTasksWeek();
+        tasksweek[0].Mon = 1;  
+        controller.save();
+        // Update
+        tasksweek[0].Mon = 3;
+        controller.save();
+        Time__c testTime = [SELECT Time_spend__c FROM Time__c 
+                            WHERE Project__c = :project.Id
+                              AND Task__c = :task.Id
+                              AND Date__c = :startWeek
+                            LIMIT 1];
+        System.assertEquals(3, testTime.Time_spend__c);
+        // Add row
+        controller.add();        
+    }
+
+}
