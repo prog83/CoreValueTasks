@@ -56,13 +56,8 @@ public class myControllerTask {
             return setCon;
         }
         set;
-    }
-	
-    // Initialize setCon and return a list of records
-    public List<Time__c> getTimes() {
-         return (List<Time__c>) setCon.getRecords();
-    } 
-    
+    }	
+  
     // Save time for task (Converting custom object to sObjects)
     private void saveTime(Date dt, Integer timespend, TaskWeek record) {
         Billing_Rule__c billing = [SELECT Id, Non_billable__c FROM Billing_Rule__c
