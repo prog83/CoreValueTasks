@@ -1,3 +1,2 @@
 # CoreValueTasks
-test task №1
-test task №2
+test task №1,2
